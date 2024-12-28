@@ -24,8 +24,33 @@ def load_neos(neo_csv_path):
     :param neo_csv_path: A path to a CSV file containing data about near-Earth objects.
     :return: A collection of `NearEarthObject`s.
     """
-    # TODO: Load NEO data from the given CSV file.
-    return ()
+    neos = []
+    
+    # Load the NEO data from the specified CSV file.
+    try:
+        with open(neo_csv_path, 'r') as infile:
+            reader = csv.reader(infile)
+
+            # Next to second row
+            next(reader) 
+
+            for line in reader:
+                # Extract necessary info
+                name = line[4]
+                diameter = line[15]
+                designation = line[3]
+                hazardous = line[7].lower() == 'y'
+
+                 # Instantiate NEO
+                neo = NearEarthObject(designation = designation, name = name, diameter = diameter, hazardous = hazardous)
+                neos.append(neo)
+
+    except FileNotFoundError:
+        print("CSV file not found: {neo_csv_path}")
+    except ValueError:
+        print("Invalid CSV format or missing data")
+
+    return neos
 
 
 def load_approaches(cad_json_path):
@@ -34,5 +59,25 @@ def load_approaches(cad_json_path):
     :param cad_json_path: A path to a JSON file containing data about close approaches.
     :return: A collection of `CloseApproach`es.
     """
-    # TODO: Load close approach data from the given JSON file.
-    return ()
+    apprs = []
+
+    # Load the close approach data from the specified JSON file.
+    try:
+        with open(cad_json_path, 'r') as f:
+            cad_data = json.load(f)
+
+            # Some necessary attributes in "fields"
+            field_indices = {field: cad_data['fields'].index(field) for field in ['des', 'cd', 'dist', 'v_rel']}
+
+            l = 0
+            while l < len(cad_data['data']):
+                # Extract the data for the corresponding field attribute indexes. 
+                # Then, initiate the `CloseApproach()` object.
+                data = cad_data['data'][l]
+                appr = CloseApproach(designation = data[field_indices['des']], time = data[field_indices['cd']], distance=data[field_indices['dist']], velocity=data[field_indices['v_rel']])
+                apprs.append(appr)
+                l += 1
+    except FileNotFoundError:
+        print("JSON file not found: {cad_json_path}")
+    
+    return apprs

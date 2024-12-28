@@ -17,7 +17,7 @@ iterator.
 You'll edit this file in Tasks 3a and 3c.
 """
 import operator
-
+import itertools
 
 class UnsupportedCriterionError(NotImplementedError):
     """A filter criterion is unsupported."""
@@ -38,6 +38,7 @@ class AttributeFilter:
     Concrete subclasses can override the `get` classmethod to provide custom
     behavior to fetch a desired attribute from the given `CloseApproach`.
     """
+
     def __init__(self, op, value):
         """Construct a new `AttributeFilter` from an binary predicate and a reference value.
 
@@ -69,8 +70,69 @@ class AttributeFilter:
         raise UnsupportedCriterionError
 
     def __repr__(self):
+        """Machine readable representation."""
         return f"{self.__class__.__name__}(op=operator.{self.op.__name__}, value={self.value})"
 
+# Additional classes
+class date_filter(AttributeFilter):
+    """Specific subclass for date filters."""
+
+    @classmethod
+    def get(cls, approach):
+        """Return the approach date.
+
+        :param approach: A `CloseApproach` object to evaluate this filter. 
+        :return: The date of the CloseApproach event.
+        """
+        return approach.time.date()
+    
+class distance_filter(AttributeFilter):
+    """Specific subclass for distance filters."""
+
+    @classmethod
+    def get(cls, approach):
+        """Return the approach distance.
+
+        :param approach: A `CloseApproach` object to evaluate this filter. 
+        :return: The distance of the CloseApproach event.
+        """
+        return approach.distance
+    
+class velocity_filter(AttributeFilter):
+    """Specific subclass for velocity filters."""
+
+    @classmethod
+    def get(cls, approach):
+        """Return the approach velocity.
+
+        :param approach: A `CloseApproach` object to evaluate this filter. 
+        :return: The velocity of the CloseApproach event.
+        """
+        return approach.velocity 
+
+class diameter_filter(AttributeFilter):
+    """Specific subclass for diameter filters."""
+
+    @classmethod
+    def get(cls, approach):
+        """Return the approaching `NearEarthObject`'s diameter.
+
+        :param approach: A `CloseApproach` object to evaluate this filter. 
+        :return: The diameter of the CloseApproach event.
+        """
+        return approach.neo.diameter
+
+class hazardous_filter(AttributeFilter):
+    """Specific subclass for hazardous filters."""
+
+    @classmethod
+    def get(cls, approach):
+        """Return the approaching `NearEarthObject`'s hazard flag.
+
+        :param approach: A `CloseApproach` object to evaluate this filter. 
+        :return: The hazardous of the CloseApproach event.
+        """
+        return approach.neo.hazardous
 
 def create_filters(
         date=None, start_date=None, end_date=None,
@@ -108,8 +170,59 @@ def create_filters(
     :param hazardous: Whether the NEO of a matching `CloseApproach` is potentially hazardous.
     :return: A collection of filters for use with `query`.
     """
-    # TODO: Decide how you will represent your filters.
-    return ()
+    # Filters that utilize the Date Filter.
+    if date:
+        date_Filter = date_filter(operator.eq, date)
+    else:
+        date_Filter = None
+    if start_date:
+        startDate_Filter = date_filter(operator.ge, start_date)
+    else:
+        startDate_Filter = None
+    if end_date:
+        endDate_Filter = date_filter(operator.le, end_date)
+    else:
+        endDate_Filter = None
+
+    # Filters that utilize the distance Filter.
+    if distance_min:
+        distanceMin_Filter = distance_filter(operator.ge, distance_min)
+    else:
+        distanceMin_Filter = None
+    if distance_max:
+        distanceMax_Filter = distance_filter(operator.le, distance_max)
+    else:
+        distanceMax_Filter = None
+
+    # Filters that utilize the velocity Filter.
+    if velocity_min:
+        velocityMin_Filter = velocity_filter(operator.ge, velocity_min)
+    else:
+        velocityMin_Filter = None
+    if velocity_max:
+        velocityMax_Filter = velocity_filter(operator.le, velocity_max)
+    else:
+        velocityMax_Filter = None
+
+    # Filters that utilize the diameter Filter.
+    if diameter_min:
+        diameterMin_Filter = diameter_filter(operator.ge, diameter_min)
+    else:
+        diameterMin_Filter = None
+    if diameter_max:
+        diameterMax_Filter = diameter_filter(operator.le, diameter_max)
+    else:
+        diameterMax_Filter = None
+
+    # Filters that utilize the hazardous Filter.
+    if hazardous is not None:
+        hazardous_Filter = hazardous_filter(operator.eq, hazardous)
+    else:
+        hazardous_Filter = None
+
+    filters_data = (date_Filter, startDate_Filter, endDate_Filter, distanceMin_Filter, distanceMax_Filter, velocityMin_Filter, velocityMax_Filter, diameterMin_Filter, diameterMax_Filter, hazardous_Filter)
+    
+    return filters_data
 
 
 def limit(iterator, n=None):
@@ -121,5 +234,9 @@ def limit(iterator, n=None):
     :param n: The maximum number of values to produce.
     :yield: The first (at most) `n` values from the iterator.
     """
-    # TODO: Produce at most `n` values from the given iterator.
-    return iterator
+    # Generate a maximum of `n` values from the specified iterator.
+    if n == 0 or n is None:
+        temp = iterator
+    else:
+        temp = list(itertools.islice(iterator, 0, n))
+    return temp
